@@ -3,18 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/Pik-9/SilphScope/src/strategy"
 	"log"
 )
-
-var str2strat = map[string]Strategy{
-	"author": Author,
-	"commit": Commit,
-}
-
-var strat2str = map[Strategy]string{
-	Author: "author",
-	Commit: "commit",
-}
 
 func main() {
 	commit := flag.String("c", "HEAD", "The commit to unghost.")
@@ -24,11 +15,11 @@ func main() {
   Strategy commit will recreate every commit with its message and date.`)
 	flag.Parse()
 
-	strat, ok := str2strat[*stratStr]
+	strat, err := strategy.New(*stratStr)
 
-	if !ok {
-		log.Fatalf("%s is not a valid strategy.", *stratStr)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Println("Unghosting commit", *commit, "in repo", *repo, "while using strategy", strat2str[strat])
+	fmt.Println("Unghosting commit", *commit, "in repo", *repo, "while using strategy", strat)
 }
