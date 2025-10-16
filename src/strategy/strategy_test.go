@@ -39,7 +39,7 @@ func TestString(t *testing.T) {
 	for ii, strI := range expectedStrats {
 		strat := strI.String()
 		if strat != initializers[ii] {
-			t.Errorf("Wrong Strategy name: %s != %s", strat, strI)
+			t.Errorf("Wrong Strategy name: %s != %s", strat, initializers[ii])
 		}
 	}
 }
