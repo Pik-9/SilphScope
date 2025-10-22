@@ -16,7 +16,7 @@ func (f *SourceFile) Filtered(lineFilter func(*SourceLine) bool) SourceFile {
 			Content:    line.Content,
 			Author:     line.Author,
 			CommitHash: line.CommitHash,
-			NewlyAdded: line.NewlyAdded && lineFilter(&line),
+			NewlyAdded: line.NewlyAdded && !lineFilter(&line),
 		})
 	}
 
