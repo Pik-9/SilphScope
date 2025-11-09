@@ -15,26 +15,26 @@ func getHash(s string, repo *git.Repository) plumbing.Hash {
 	}
 }
 
-func ExtractPatch(repositoryPath string, commitHash string) (*object.Patch, *object.Commit, *git.Repository, error) {
+func ExtractPatch(repositoryPath string, commitHash string) (*object.Patch, *object.Commit, *object.Commit, *git.Repository, error) {
 	repo, err := git.PlainOpen(repositoryPath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	commit, err := repo.CommitObject(getHash(commitHash, repo))
 	if err != nil {
-		return nil, nil, repo, err
+		return nil, nil, nil, repo, err
 	}
 
 	parent, err := commit.Parent(0)
 	if err != nil {
-		return nil, commit, repo, err
+		return nil, commit, nil, repo, err
 	}
 
 	patch, err := commit.Patch(parent)
 	if err != nil {
-		return nil, commit, repo, err
+		return nil, commit, parent, repo, err
 	}
 
-	return patch, commit, repo, nil
+	return patch, commit, parent, repo, nil
 }

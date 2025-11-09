@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -23,6 +24,18 @@ func init() {
 	formattedAlpha = []string{"A", "b1+", "b2+", "b3+", "C", "d1+"}
 	formattedBeta = []string{"x1+", "x2+", "A", "b1+", "D"}
 	formattedGamma = []string{"A", "B", "c1+", "c2+"}
+}
+
+func compareSlices[P comparable](t *testing.T, expected []P, actual []P) {
+	if len(expected) != len(actual) {
+		t.Errorf("Lenghts mismatch: %d != %d", len(expected), len(actual))
+	}
+
+	for index, exp := range expected {
+		if exp != actual[index] {
+			t.Errorf("Failure at index %d: %v != %v", index, exp, actual[index])
+		}
+	}
 }
 
 func setup() {
@@ -108,7 +121,135 @@ func tearDown() {
 	os.RemoveAll(repoPath)
 }
 
-func TestStuff(t *testing.T) {
+func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 	setup()
 	defer tearDown()
+
+	expectedAlpha := Unique([]AuthorEmail{
+		{AuthorName: "Alice", Author: "alice@testing.com"},
+		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
+		// {AuthorName: "Bob", Author: "bob@testing.com"},
+		{AuthorName: "Claire", Author: "claire@testing.com"},
+		// {AuthorName: "David", Author: "david@testing.com"},
+		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
+	})
+
+	expectedBeta := Unique([]AuthorEmail{
+		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
+		{AuthorName: "Alice", Author: "alice@testing.com"},
+		// {AuthorName: "Bob", Author: "bob@testing.com"},
+		// {AuthorName: "Claire", Author: "claire@testing.com"},
+		{AuthorName: "David", Author: "david@testing.com"},
+		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
+	})
+
+	expectedGamma := Unique([]AuthorEmail{
+		{AuthorName: "Alice", Author: "alice@testing.com"},
+		{AuthorName: "Bob", Author: "bob@testing.com"},
+		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
+		// {AuthorName: "Claire", Author: "claire@testing.com"},
+		// {AuthorName: "David", Author: "david@testing.com"},
+		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
+	})
+
+	deltas, err := NewFileDeltas(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+
+	oldAuthorsAlpha := deltas[0].GetAllOldAuthors()
+	oldAuthorsBeta := deltas[1].GetAllOldAuthors()
+	oldAuthorsGamma := deltas[2].GetAllOldAuthors()
+
+	if !oldAuthorsAlpha.Equals(expectedAlpha) {
+		t.Errorf("The authors for file Alpha don't match: %v != %v", oldAuthorsAlpha.ToArray(), expectedAlpha.ToArray())
+	}
+
+	if !oldAuthorsBeta.Equals(expectedBeta) {
+		t.Errorf("The authors for file Beta don't match: %v != %v", oldAuthorsBeta.ToArray(), expectedBeta.ToArray())
+	}
+
+	if !oldAuthorsGamma.Equals(expectedGamma) {
+		t.Errorf("The authors for file Gamma don't match: %v != %v", oldAuthorsGamma.ToArray(), expectedGamma.ToArray())
+	}
+}
+
+func TestUnghostAuthors(t *testing.T) {
+	setup()
+	defer tearDown()
+
+	alice := AuthorEmail{
+		AuthorName: "Alice",
+		Author:     "alice@testing.com",
+	}
+
+	bob := AuthorEmail{
+		AuthorName: "Bob",
+		Author:     "bob@testing.com",
+	}
+
+	claire := AuthorEmail{
+		AuthorName: "Claire",
+		Author:     "claire@testing.com",
+	}
+
+	david := AuthorEmail{
+		AuthorName: "David",
+		Author:     "david@testing.com",
+	}
+
+	// eleonore := AuthorEmail{
+	// 	AuthorName:     "Eleonore",
+	// 	Author: "eleonore@testing.com",
+	// }
+
+	zorin := AuthorEmail{
+		AuthorName: "Zorin",
+		Author:     "zorin@reformatting.com",
+	}
+
+	expectedAlpha := []AuthorEmail{
+		alice,
+		bob,
+		bob,
+		bob,
+		claire,
+		david,
+	}
+
+	expectedBeta := []AuthorEmail{
+		zorin,
+		zorin,
+		alice,
+		bob,
+		david,
+	}
+
+	expectedGamma := []AuthorEmail{
+		alice,
+		bob,
+		zorin,
+		zorin,
+	}
+
+	deltas, err := NewFileDeltas(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+
+	newAuthorsAlpha := deltas[0].UnghostAuthors()
+	newAuthorsBeta := deltas[1].UnghostAuthors()
+	newAuthorsGamma := deltas[2].UnghostAuthors()
+
+	all := [][]AuthorEmail{newAuthorsAlpha, newAuthorsBeta, newAuthorsGamma}
+	for findex, file := range all {
+		for lindex, line := range file {
+			fmt.Printf("%d\t%s\t%s\n", lindex, line, deltas[findex].To.Lines[lindex].Text)
+		}
+		fmt.Println()
+	}
+
+	compareSlices(t, expectedAlpha, newAuthorsAlpha)
+	compareSlices(t, expectedBeta, newAuthorsBeta)
+	compareSlices(t, expectedGamma, newAuthorsGamma)
 }

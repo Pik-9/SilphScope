@@ -2,18 +2,12 @@ package repository
 
 import (
 	"errors"
+
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/format/diff"
 )
-
-type AuthorEmail struct {
-	Author, AuthorName string
-}
-
-func (ae *AuthorEmail) Authored(line *git.Line) bool {
-	return line.Author == ae.Author && line.AuthorName == ae.AuthorName
-}
 
 type FileDelta struct {
 	From, To         *git.BlameResult
@@ -21,8 +15,50 @@ type FileDelta struct {
 	CommitHash       string
 }
 
-func NewFileDelta(repositoryPath string, commitHash string) ([]FileDelta, error) {
-	return nil, errors.New("Not implemented, yet.")
+func NewFileDeltas(repositoryPath string, commitHash string) ([]FileDelta, error) {
+	patch, commit, parent, _, err := ExtractPatch(repositoryPath, commitHash)
+	if err != nil {
+		return nil, err
+	}
+
+	filePath := func(file diff.File) string {
+		if file == nil {
+			return ""
+		}
+		return file.Path()
+	}
+
+	ret := make([]FileDelta, 0, len(patch.FilePatches()))
+	for _, fp := range patch.FilePatches() {
+		fromPath, toPath := fp.Files()
+		fd := FileDelta{
+			CommitHash: commitHash,
+			FromPath:   filePath(fromPath),
+			ToPath:     filePath(toPath),
+		}
+
+		if fp.IsBinary() {
+			return nil, errors.New("The commit must not contain any binary files.")
+		}
+
+		if fromPath != nil {
+			fd.From, err = git.Blame(parent, fromPath.Path())
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if toPath != nil {
+			fd.To, err = git.Blame(commit, toPath.Path())
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		ret = append(ret, fd)
+	}
+
+	return ret, nil
 }
 
 func compareLines(a, b string) bool {
@@ -48,7 +84,7 @@ func (fd *FileDelta) isLineNew(index int) bool {
 	return fd.To.Lines[index].Hash.String() == fd.CommitHash
 }
 
-func (fd *FileDelta) AssignOldAuthors() {
+func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
 	b2a := make(map[int]int)
 	pointer := 0
 	for index, origLine := range fd.From.Lines {
@@ -69,14 +105,24 @@ func (fd *FileDelta) AssignOldAuthors() {
 		}
 	}
 
+	ret := make([]AuthorEmail, 0, len(fd.To.Lines))
+
 	for index := range fd.To.Lines {
 		corrLine := b2a[index]
 		if fd.isLineNew(index) && corrLine > -1 && corrLine < len(fd.From.Lines) {
-			fd.To.Lines[index].Author = fd.From.Lines[index].Author
-			fd.To.Lines[index].AuthorName = fd.From.Lines[index].AuthorName
-			fd.To.Lines[index].Date = fd.From.Lines[index].Date
+			ret = append(ret, AuthorEmail{
+				Author:     fd.To.Lines[corrLine].Author,
+				AuthorName: fd.To.Lines[corrLine].AuthorName,
+			})
+		} else {
+			ret = append(ret, AuthorEmail{
+				Author:     fd.To.Lines[index].Author,
+				AuthorName: fd.To.Lines[index].AuthorName,
+			})
 		}
 	}
+
+	return ret
 }
 
 func (fd *FileDelta) ContentFilteredForUsers(users []AuthorEmail) []string {
@@ -97,7 +143,7 @@ func (fd *FileDelta) ContentFilteredForUsers(users []AuthorEmail) []string {
 	return ret
 }
 
-func (fd *FileDelta) GetAllAuthors() []AuthorEmail {
+func (fd *FileDelta) GetAllOldAuthors() Set[AuthorEmail] {
 	authorSet := make(map[AuthorEmail]bool)
 	for _, line := range fd.To.Lines {
 		author := AuthorEmail{
@@ -107,10 +153,5 @@ func (fd *FileDelta) GetAllAuthors() []AuthorEmail {
 		authorSet[author] = true
 	}
 
-	ret := make([]AuthorEmail, 0, len(authorSet))
-	for k := range authorSet {
-		ret = append(ret, k)
-	}
-
-	return ret
+	return authorSet
 }
