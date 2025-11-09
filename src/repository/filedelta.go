@@ -107,17 +107,14 @@ func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
 
 	ret := make([]AuthorEmail, 0, len(fd.To.Lines))
 
-	for index := range fd.To.Lines {
+	for index, toLine := range fd.To.Lines {
 		corrLine := b2a[index]
-		if fd.isLineNew(index) && corrLine > -1 && corrLine < len(fd.From.Lines) {
-			ret = append(ret, AuthorEmail{
-				Author:     fd.To.Lines[corrLine].Author,
-				AuthorName: fd.To.Lines[corrLine].AuthorName,
-			})
+		if corrLine < 0 || corrLine >= len(fd.From.Lines) {
+			ret = append(ret, AuthorEmail{Author: toLine.Author, AuthorName: toLine.AuthorName})
 		} else {
 			ret = append(ret, AuthorEmail{
-				Author:     fd.To.Lines[index].Author,
-				AuthorName: fd.To.Lines[index].AuthorName,
+				Author:     fd.From.Lines[corrLine].Author,
+				AuthorName: fd.From.Lines[corrLine].AuthorName,
 			})
 		}
 	}
