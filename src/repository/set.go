@@ -18,6 +18,20 @@ func Unique[T comparable](array []T) Set[T] {
 	return ret
 }
 
+func (set Set[T]) Union(other Set[T]) Set[T] {
+	ret := set
+	for key := range other {
+		ret[key] = true
+	}
+
+	return ret
+}
+
+func (set Set[T]) Contains(value T) bool {
+	_, ret := set[value]
+	return ret
+}
+
 func (set Set[T]) Equals(other Set[T]) bool {
 	if len(set) != len(other) {
 		return false

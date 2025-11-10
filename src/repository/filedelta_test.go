@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -17,6 +16,7 @@ var formattedAlpha []string
 var formattedBeta []string
 var formattedGamma []string
 var repoPath string
+var alice, bob, claire, david, eleonore, zorin AuthorEmail
 
 func init() {
 	repoPath = "../../testing_tmp/repo/"
@@ -24,11 +24,42 @@ func init() {
 	formattedAlpha = []string{"A", "b1+", "b2+", "b3+", "C", "d1+"}
 	formattedBeta = []string{"x1+", "x2+", "A", "b1+", "D"}
 	formattedGamma = []string{"A", "B", "c1+", "c2+"}
+
+	alice = AuthorEmail{
+		AuthorName: "Alice",
+		Author:     "alice@testing.com",
+	}
+
+	bob = AuthorEmail{
+		AuthorName: "Bob",
+		Author:     "bob@testing.com",
+	}
+
+	claire = AuthorEmail{
+		AuthorName: "Claire",
+		Author:     "claire@testing.com",
+	}
+
+	david = AuthorEmail{
+		AuthorName: "David",
+		Author:     "david@testing.com",
+	}
+
+	eleonore = AuthorEmail{
+		AuthorName: "Eleonore",
+		Author:     "eleonore@testing.com",
+	}
+
+	zorin = AuthorEmail{
+		AuthorName: "Zorin",
+		Author:     "zorin@reformatting.com",
+	}
 }
 
 func compareSlices[P comparable](t *testing.T, expected []P, actual []P) {
 	if len(expected) != len(actual) {
-		t.Errorf("Lenghts mismatch: %d != %d", len(expected), len(actual))
+		t.Errorf("Lenghts mismatch: %d != %d\n  --> %v != %v", len(expected), len(actual), expected, actual)
+		return
 	}
 
 	for index, exp := range expected {
@@ -178,36 +209,6 @@ func TestUnghostAuthors(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	alice := AuthorEmail{
-		AuthorName: "Alice",
-		Author:     "alice@testing.com",
-	}
-
-	bob := AuthorEmail{
-		AuthorName: "Bob",
-		Author:     "bob@testing.com",
-	}
-
-	claire := AuthorEmail{
-		AuthorName: "Claire",
-		Author:     "claire@testing.com",
-	}
-
-	david := AuthorEmail{
-		AuthorName: "David",
-		Author:     "david@testing.com",
-	}
-
-	// eleonore := AuthorEmail{
-	// 	AuthorName:     "Eleonore",
-	// 	Author: "eleonore@testing.com",
-	// }
-
-	zorin := AuthorEmail{
-		AuthorName: "Zorin",
-		Author:     "zorin@reformatting.com",
-	}
-
 	expectedAlpha := []AuthorEmail{
 		alice,
 		bob,
@@ -241,15 +242,39 @@ func TestUnghostAuthors(t *testing.T) {
 	newAuthorsBeta := deltas[1].UnghostAuthors()
 	newAuthorsGamma := deltas[2].UnghostAuthors()
 
-	all := [][]AuthorEmail{newAuthorsAlpha, newAuthorsBeta, newAuthorsGamma}
-	for findex, file := range all {
-		for lindex, line := range file {
-			fmt.Printf("%d\t%s\t%s\n", lindex, line, deltas[findex].To.Lines[lindex].Text)
-		}
-		fmt.Println()
-	}
-
 	compareSlices(t, expectedAlpha, newAuthorsAlpha)
 	compareSlices(t, expectedBeta, newAuthorsBeta)
 	compareSlices(t, expectedGamma, newAuthorsGamma)
+}
+
+func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
+	setup()
+	defer tearDown()
+
+	deltas, err := NewFileDeltas(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+
+	authors := []AuthorEmail{zorin, alice, bob, claire, david, eleonore}
+
+	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique([]AuthorEmail{})), []string{"A", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:1])), []string{"A", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:2])), []string{"A", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:3])), []string{"A", "b1+", "b2+", "b3+", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:4])), []string{"A", "b1+", "b2+", "b3+", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:5])), []string{"A", "b1+", "b2+", "b3+", "C", "d1+"})
+
+	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique([]AuthorEmail{})), []string{"A", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors[:1])), []string{"x1+", "x2+", "A", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors[:2])), []string{"x1+", "x2+", "A", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors[:3])), []string{"x1+", "x2+", "A", "b1+", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors)), []string{"x1+", "x2+", "A", "b1+", "D"})
+
+	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique([]AuthorEmail{})), []string{"A", "B"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:1])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:2])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:3])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
 }

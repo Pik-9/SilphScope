@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"strings"
 
@@ -12,7 +13,7 @@ import (
 type FileDelta struct {
 	From, To         *git.BlameResult
 	FromPath, ToPath string
-	CommitHash       string
+	CommitAuthor     AuthorEmail
 }
 
 func NewFileDeltas(repositoryPath string, commitHash string) ([]FileDelta, error) {
@@ -32,9 +33,9 @@ func NewFileDeltas(repositoryPath string, commitHash string) ([]FileDelta, error
 	for _, fp := range patch.FilePatches() {
 		fromPath, toPath := fp.Files()
 		fd := FileDelta{
-			CommitHash: commitHash,
-			FromPath:   filePath(fromPath),
-			ToPath:     filePath(toPath),
+			CommitAuthor: AuthorEmail{Author: commit.Author.Email, AuthorName: commit.Author.Name},
+			FromPath:     filePath(fromPath),
+			ToPath:       filePath(toPath),
 		}
 
 		if fp.IsBinary() {
@@ -77,11 +78,11 @@ func (fd *FileDelta) findFirstOccurenceInTo(line string, startingAt int) int {
 }
 
 func (fd *FileDelta) isLineNew(index int) bool {
-	if index >= len(fd.To.Lines) {
+	if index < 0 || index >= len(fd.To.Lines) {
 		return false
 	}
 
-	return fd.To.Lines[index].Hash.String() == fd.CommitHash
+	return AuthorFromLine(fd.To.Lines[index]) == fd.CommitAuthor
 }
 
 func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
@@ -110,31 +111,26 @@ func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
 	for index, toLine := range fd.To.Lines {
 		corrLine := b2a[index]
 		if corrLine < 0 || corrLine >= len(fd.From.Lines) {
-			ret = append(ret, AuthorEmail{Author: toLine.Author, AuthorName: toLine.AuthorName})
+			ret = append(ret, AuthorFromLine(toLine))
 		} else {
-			ret = append(ret, AuthorEmail{
-				Author:     fd.From.Lines[corrLine].Author,
-				AuthorName: fd.From.Lines[corrLine].AuthorName,
-			})
+			ret = append(ret, AuthorFromLine(fd.From.Lines[corrLine]))
 		}
 	}
 
 	return ret
 }
 
-func (fd *FileDelta) ContentFilteredForUsers(users []AuthorEmail) []string {
+func (fd *FileDelta) ContentFilteredForUsers(users Set[AuthorEmail]) []string {
 	ret := make([]string, 0)
+	unghostedLineAuthors := fd.UnghostAuthors()
 	for index, line := range fd.To.Lines {
 		if !fd.isLineNew(index) {
 			ret = append(ret, line.Text)
 			continue
 		}
 
-		for _, user := range users {
-			if user.Authored(line) {
-				ret = append(ret, line.Text)
-				break
-			}
+		if users.Contains(unghostedLineAuthors[index]) {
+			ret = append(ret, line.Text)
 		}
 	}
 	return ret
@@ -143,12 +139,16 @@ func (fd *FileDelta) ContentFilteredForUsers(users []AuthorEmail) []string {
 func (fd *FileDelta) GetAllOldAuthors() Set[AuthorEmail] {
 	authorSet := make(map[AuthorEmail]bool)
 	for _, line := range fd.To.Lines {
-		author := AuthorEmail{
-			Author:     line.Author,
-			AuthorName: line.AuthorName,
-		}
+		author := AuthorFromLine(line)
 		authorSet[author] = true
 	}
 
 	return authorSet
+}
+
+func (fd *FileDelta) PrintUnghosted() {
+	unghostedLineAuthors := fd.UnghostAuthors()
+	for index, line := range fd.To.Lines {
+		fmt.Printf("%d\t%s\t%s\n", index, unghostedLineAuthors[index], line.Text)
+	}
 }
