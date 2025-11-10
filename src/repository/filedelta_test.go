@@ -157,32 +157,9 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	expectedAlpha := utils.Unique([]AuthorEmail{
-		{AuthorName: "Alice", Author: "alice@testing.com"},
-		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
-		// {AuthorName: "Bob", Author: "bob@testing.com"},
-		{AuthorName: "Claire", Author: "claire@testing.com"},
-		// {AuthorName: "David", Author: "david@testing.com"},
-		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
-	})
-
-	expectedBeta := utils.Unique([]AuthorEmail{
-		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
-		{AuthorName: "Alice", Author: "alice@testing.com"},
-		// {AuthorName: "Bob", Author: "bob@testing.com"},
-		// {AuthorName: "Claire", Author: "claire@testing.com"},
-		{AuthorName: "David", Author: "david@testing.com"},
-		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
-	})
-
-	expectedGamma := utils.Unique([]AuthorEmail{
-		{AuthorName: "Alice", Author: "alice@testing.com"},
-		{AuthorName: "Bob", Author: "bob@testing.com"},
-		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
-		// {AuthorName: "Claire", Author: "claire@testing.com"},
-		// {AuthorName: "David", Author: "david@testing.com"},
-		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
-	})
+	expectedAlpha := utils.Unique([]AuthorEmail{alice, zorin, claire})
+	expectedBeta := utils.Unique([]AuthorEmail{zorin, alice, david})
+	expectedGamma := utils.Unique([]AuthorEmail{alice, bob, zorin})
 
 	deltas, err := NewFileDeltas(repoPath, "HEAD")
 	if err != nil {
@@ -206,7 +183,7 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 	}
 }
 
-func TestUnghostAuthors(t *testing.T) {
+func TestFileDelta_UnghostAuthors(t *testing.T) {
 	setup()
 	defer tearDown()
 
