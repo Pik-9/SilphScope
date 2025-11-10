@@ -57,19 +57,6 @@ func init() {
 	}
 }
 
-func compareSlices[P comparable](t *testing.T, expected []P, actual []P) {
-	if len(expected) != len(actual) {
-		t.Errorf("Lenghts mismatch: %d != %d\n  --> %v != %v", len(expected), len(actual), expected, actual)
-		return
-	}
-
-	for index, exp := range expected {
-		if exp != actual[index] {
-			t.Errorf("Failure at index %d: %v != %v", index, exp, actual[index])
-		}
-	}
-}
-
 func setup() {
 	err := os.MkdirAll(repoPath, 0750)
 	if err != nil {
@@ -220,9 +207,9 @@ func TestFileDelta_UnghostAuthors(t *testing.T) {
 	newAuthorsBeta := deltas[1].UnghostAuthors()
 	newAuthorsGamma := deltas[2].UnghostAuthors()
 
-	compareSlices(t, expectedAlpha, newAuthorsAlpha)
-	compareSlices(t, expectedBeta, newAuthorsBeta)
-	compareSlices(t, expectedGamma, newAuthorsGamma)
+	utils.CompareSlices(t, expectedAlpha, newAuthorsAlpha)
+	utils.CompareSlices(t, expectedBeta, newAuthorsBeta)
+	utils.CompareSlices(t, expectedGamma, newAuthorsGamma)
 }
 
 func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
@@ -236,23 +223,23 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 
 	authors := []AuthorEmail{zorin, alice, bob, claire, david, eleonore}
 
-	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"A", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"A", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "b1+", "b2+", "b3+", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "b1+", "b2+", "b3+", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "b1+", "b2+", "b3+", "C", "d1+"})
+	utils.CompareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "C"})
+	utils.CompareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"A", "C"})
+	utils.CompareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"A", "C"})
+	utils.CompareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "b1+", "b2+", "b3+", "C"})
+	utils.CompareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "b1+", "b2+", "b3+", "C"})
+	utils.CompareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "b1+", "b2+", "b3+", "C", "d1+"})
 
-	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"x1+", "x2+", "A", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"x1+", "x2+", "A", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"x1+", "x2+", "A", "b1+", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors)), []string{"x1+", "x2+", "A", "b1+", "D"})
+	utils.CompareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "D"})
+	utils.CompareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"x1+", "x2+", "A", "D"})
+	utils.CompareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"x1+", "x2+", "A", "D"})
+	utils.CompareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"x1+", "x2+", "A", "b1+", "D"})
+	utils.CompareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors)), []string{"x1+", "x2+", "A", "b1+", "D"})
 
-	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "B"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
+	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "B"})
+	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"A", "B", "c1+", "c2+"})
+	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"A", "B", "c1+", "c2+"})
+	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "B", "c1+", "c2+"})
+	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
+	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
 }
