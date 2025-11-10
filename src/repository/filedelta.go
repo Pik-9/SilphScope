@@ -6,6 +6,7 @@ import (
 
 	"strings"
 
+	"github.com/Pik-9/SilphScope/src/utils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/format/diff"
 )
@@ -120,7 +121,7 @@ func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
 	return ret
 }
 
-func (fd *FileDelta) ContentFilteredForUsers(users Set[AuthorEmail]) []string {
+func (fd *FileDelta) ContentFilteredForUsers(users utils.Set[AuthorEmail]) []string {
 	ret := make([]string, 0)
 	unghostedLineAuthors := fd.UnghostAuthors()
 	for index, line := range fd.To.Lines {
@@ -136,7 +137,7 @@ func (fd *FileDelta) ContentFilteredForUsers(users Set[AuthorEmail]) []string {
 	return ret
 }
 
-func (fd *FileDelta) GetAllOldAuthors() Set[AuthorEmail] {
+func (fd *FileDelta) GetAllOldAuthors() utils.Set[AuthorEmail] {
 	authorSet := make(map[AuthorEmail]bool)
 	for _, line := range fd.To.Lines {
 		author := AuthorFromLine(line)

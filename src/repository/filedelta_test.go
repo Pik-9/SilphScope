@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Pik-9/SilphScope/src/utils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -114,36 +115,36 @@ func setup() {
 		return nil
 	}
 
-	WriteLines(repoPath+"Alpha.txt", baseFile[0:1])
-	WriteLines(repoPath+"Beta.txt", baseFile[0:1])
-	WriteLines(repoPath+"Gamma.txt", baseFile[0:1])
+	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:1])
+	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:1])
+	utils.WriteLines(repoPath+"Gamma.txt", baseFile[0:1])
 	wtree.AddGlob("*")
 	commit("Alice", "alice@testing.com")
 
-	WriteLines(repoPath+"Alpha.txt", baseFile[0:2])
-	WriteLines(repoPath+"Beta.txt", baseFile[0:2])
-	WriteLines(repoPath+"Gamma.txt", baseFile[0:2])
+	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:2])
+	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:2])
+	utils.WriteLines(repoPath+"Gamma.txt", baseFile[0:2])
 	wtree.AddGlob("*")
 	commit("Bob", "bob@testing.com")
 
-	WriteLines(repoPath+"Alpha.txt", baseFile[0:3])
-	WriteLines(repoPath+"Beta.txt", baseFile[0:3])
+	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:3])
+	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:3])
 	wtree.AddGlob("*")
 	commit("Claire", "claire@testing.com")
 
-	WriteLines(repoPath+"Alpha.txt", baseFile[0:4])
-	WriteLines(repoPath+"Beta.txt", baseFile[0:4])
+	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:4])
+	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:4])
 	wtree.AddGlob("*")
 	commit("David", "david@testing.com")
 
-	WriteLines(repoPath+"Alpha.txt", baseFile[0:5])
+	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:5])
 	wtree.Add(repoPath + "Alpha.txt")
 	wtree.AddGlob("*")
 	commit("Eleonore", "eleonore@testing.com")
 
-	WriteLines(repoPath+"Alpha.txt", formattedAlpha)
-	WriteLines(repoPath+"Beta.txt", formattedBeta)
-	WriteLines(repoPath+"Gamma.txt", formattedGamma)
+	utils.WriteLines(repoPath+"Alpha.txt", formattedAlpha)
+	utils.WriteLines(repoPath+"Beta.txt", formattedBeta)
+	utils.WriteLines(repoPath+"Gamma.txt", formattedGamma)
 	wtree.AddGlob("*")
 	commit("Zorin", "zorin@reformatting.com")
 }
@@ -156,7 +157,7 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	expectedAlpha := Unique([]AuthorEmail{
+	expectedAlpha := utils.Unique([]AuthorEmail{
 		{AuthorName: "Alice", Author: "alice@testing.com"},
 		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
 		// {AuthorName: "Bob", Author: "bob@testing.com"},
@@ -165,7 +166,7 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
 	})
 
-	expectedBeta := Unique([]AuthorEmail{
+	expectedBeta := utils.Unique([]AuthorEmail{
 		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
 		{AuthorName: "Alice", Author: "alice@testing.com"},
 		// {AuthorName: "Bob", Author: "bob@testing.com"},
@@ -174,7 +175,7 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 		// {AuthorName: "Eleonore", Author: "eleonore@testing.com"},
 	})
 
-	expectedGamma := Unique([]AuthorEmail{
+	expectedGamma := utils.Unique([]AuthorEmail{
 		{AuthorName: "Alice", Author: "alice@testing.com"},
 		{AuthorName: "Bob", Author: "bob@testing.com"},
 		{AuthorName: "Zorin", Author: "zorin@reformatting.com"},
@@ -258,23 +259,23 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 
 	authors := []AuthorEmail{zorin, alice, bob, claire, david, eleonore}
 
-	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique([]AuthorEmail{})), []string{"A", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:1])), []string{"A", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:2])), []string{"A", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:3])), []string{"A", "b1+", "b2+", "b3+", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:4])), []string{"A", "b1+", "b2+", "b3+", "C"})
-	compareSlices(t, deltas[0].ContentFilteredForUsers(Unique(authors[:5])), []string{"A", "b1+", "b2+", "b3+", "C", "d1+"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"A", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"A", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "b1+", "b2+", "b3+", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "b1+", "b2+", "b3+", "C"})
+	compareSlices(t, deltas[0].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "b1+", "b2+", "b3+", "C", "d1+"})
 
-	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique([]AuthorEmail{})), []string{"A", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors[:1])), []string{"x1+", "x2+", "A", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors[:2])), []string{"x1+", "x2+", "A", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors[:3])), []string{"x1+", "x2+", "A", "b1+", "D"})
-	compareSlices(t, deltas[1].ContentFilteredForUsers(Unique(authors)), []string{"x1+", "x2+", "A", "b1+", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"x1+", "x2+", "A", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"x1+", "x2+", "A", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"x1+", "x2+", "A", "b1+", "D"})
+	compareSlices(t, deltas[1].ContentFilteredForUsers(utils.Unique(authors)), []string{"x1+", "x2+", "A", "b1+", "D"})
 
-	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique([]AuthorEmail{})), []string{"A", "B"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:1])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:2])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:3])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
-	compareSlices(t, deltas[2].ContentFilteredForUsers(Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique([]AuthorEmail{})), []string{"A", "B"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:1])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:2])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
+	compareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
 }
