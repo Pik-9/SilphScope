@@ -1,5 +1,7 @@
 package utils
 
+import "fmt"
+
 type Set[T comparable] map[T]bool
 
 func (set Set[T]) ToArray() []T {
@@ -45,4 +47,18 @@ func (set Set[T]) Equals(other Set[T]) bool {
 	}
 
 	return true
+}
+
+func (set Set[T]) String() string {
+	inner := "{"
+	index := 0
+	for key := range set {
+		if index == 0 {
+			inner = fmt.Sprintf("%s%v", inner, key)
+		} else {
+			inner = fmt.Sprintf("%s, %v", inner, key)
+		}
+		index += 1
+	}
+	return inner + "}"
 }
