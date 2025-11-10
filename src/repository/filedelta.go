@@ -9,6 +9,7 @@ import (
 	"github.com/Pik-9/SilphScope/src/utils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/format/diff"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 type FileDelta struct {
@@ -17,12 +18,7 @@ type FileDelta struct {
 	CommitAuthor     AuthorEmail
 }
 
-func NewFileDeltas(repositoryPath string, commitHash string) ([]FileDelta, error) {
-	patch, commit, parent, _, err := ExtractPatch(repositoryPath, commitHash)
-	if err != nil {
-		return nil, err
-	}
-
+func NewFileDeltas(commit *object.Commit, parentCommit *object.Commit, patch diff.Patch) ([]FileDelta, error) {
 	filePath := func(file diff.File) string {
 		if file == nil {
 			return ""
@@ -43,8 +39,9 @@ func NewFileDeltas(repositoryPath string, commitHash string) ([]FileDelta, error
 			return nil, errors.New("The commit must not contain any binary files.")
 		}
 
+		var err error
 		if fromPath != nil {
-			fd.From, err = git.Blame(parent, fromPath.Path())
+			fd.From, err = git.Blame(parentCommit, fromPath.Path())
 			if err != nil {
 				return nil, err
 			}

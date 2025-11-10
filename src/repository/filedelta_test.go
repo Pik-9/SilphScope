@@ -148,7 +148,11 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 	expectedBeta := utils.Unique([]AuthorEmail{zorin, alice, david})
 	expectedGamma := utils.Unique([]AuthorEmail{alice, bob, zorin})
 
-	deltas, err := NewFileDeltas(repoPath, "HEAD")
+	patch, commit, parentCommit, _, err := ExtractPatch(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+	deltas, err := NewFileDeltas(commit, parentCommit, patch)
 	if err != nil {
 		t.Error(err)
 	}
@@ -198,7 +202,11 @@ func TestFileDelta_UnghostAuthors(t *testing.T) {
 		zorin,
 	}
 
-	deltas, err := NewFileDeltas(repoPath, "HEAD")
+	patch, commit, parentCommit, _, err := ExtractPatch(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+	deltas, err := NewFileDeltas(commit, parentCommit, patch)
 	if err != nil {
 		t.Error(err)
 	}
@@ -216,7 +224,11 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	deltas, err := NewFileDeltas(repoPath, "HEAD")
+	patch, commit, parentCommit, _, err := ExtractPatch(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+	deltas, err := NewFileDeltas(commit, parentCommit, patch)
 	if err != nil {
 		t.Error(err)
 	}
