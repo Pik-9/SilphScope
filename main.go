@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 
+	"github.com/Pik-9/SilphScope/src/repository"
 	"github.com/Pik-9/SilphScope/src/strategy"
 )
 
@@ -22,5 +22,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Unghosting commit", *commitHash, "in repo", *repoPath, "while using strategy", strat)
+	log.Default().Println("Unghosting commit", *commitHash, "in repo", *repoPath, "while using strategy", strat)
+
+	patch, commit, parent, repo, err := repository.ExtractPatch(*repoPath, *commitHash)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	deltas, err := repository.NewFileDeltas(commit, parent, patch)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	unghostedBranchName, err := repository.CreateUnghostedBranch(repo, parent, deltas)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Successfully unghosted commit %s in %s at branch %s.\n", commit.Hash.String(), *repoPath, unghostedBranchName)
 }

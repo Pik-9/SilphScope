@@ -255,3 +255,7 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
 	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
 }
+
+func TestCreateEmptyRepo(t *testing.T) {
+	setup()
+}
