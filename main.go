@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Pik-9/SilphScope/src/repository"
 	"github.com/Pik-9/SilphScope/src/strategy"
 )
 
@@ -24,15 +23,4 @@ func main() {
 	}
 
 	fmt.Println("Unghosting commit", *commitHash, "in repo", *repoPath, "while using strategy", strat)
-
-	patch, _, _, err := repository.ExtractPatch(*repoPath, *commitHash)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, fp := range patch.FilePatches() {
-		for _, chunk := range fp.Chunks() {
-			fmt.Println(chunk)
-		}
-	}
 }
