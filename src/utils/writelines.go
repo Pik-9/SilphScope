@@ -1,19 +1,21 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 )
 
 func WriteLines(path string, lines []string) error {
-	fout, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+	fout, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer fout.Close()
 
-	for _, ln := range lines {
-		fmt.Fprintln(fout, ln)
+	for _, line := range lines {
+		_, err = fout.WriteString(line + "\n")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

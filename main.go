@@ -34,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	unghostedBranchName, err := repository.CreateUnghostedBranch(repo, parent, deltas)
+	unghostedBranchName, err := repository.CreateUnghostedBranch(repo, *repoPath, commit, parent, deltas)
 	if err != nil {
 		log.Fatal(err)
 	}

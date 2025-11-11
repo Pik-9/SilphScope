@@ -15,7 +15,7 @@ import (
 type FileDelta struct {
 	From, To         *git.BlameResult
 	FromPath, ToPath string
-	CommitAuthor     AuthorEmail
+	Commit           *object.Commit
 }
 
 func NewFileDeltas(commit *object.Commit, parentCommit *object.Commit, patch diff.Patch) ([]FileDelta, error) {
@@ -30,9 +30,9 @@ func NewFileDeltas(commit *object.Commit, parentCommit *object.Commit, patch dif
 	for _, fp := range patch.FilePatches() {
 		fromPath, toPath := fp.Files()
 		fd := FileDelta{
-			CommitAuthor: AuthorEmail{Author: commit.Author.Email, AuthorName: commit.Author.Name},
-			FromPath:     filePath(fromPath),
-			ToPath:       filePath(toPath),
+			Commit:   commit,
+			FromPath: filePath(fromPath),
+			ToPath:   filePath(toPath),
 		}
 
 		if fp.IsBinary() {
@@ -66,7 +66,7 @@ func compareLines(a, b string) bool {
 	return l1 == l2
 }
 
-func (fd *FileDelta) findFirstOccurenceInTo(line string, startingAt int) int {
+func (fd FileDelta) findFirstOccurenceInTo(line string, startingAt int) int {
 	for ii := startingAt; ii < len(fd.To.Lines); ii++ {
 		if compareLines(line, fd.To.Lines[ii].Text) {
 			return ii
@@ -75,15 +75,15 @@ func (fd *FileDelta) findFirstOccurenceInTo(line string, startingAt int) int {
 	return -1
 }
 
-func (fd *FileDelta) isLineNew(index int) bool {
+func (fd FileDelta) isLineNew(index int) bool {
 	if index < 0 || index >= len(fd.To.Lines) {
 		return false
 	}
 
-	return AuthorFromLine(fd.To.Lines[index]) == fd.CommitAuthor
+	return fd.To.Lines[index].Hash == fd.Commit.Hash
 }
 
-func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
+func (fd FileDelta) UnghostAuthors() []AuthorEmail {
 	b2a := make(map[int]int)
 	pointer := 0
 	for index, origLine := range fd.From.Lines {
@@ -118,7 +118,19 @@ func (fd *FileDelta) UnghostAuthors() []AuthorEmail {
 	return ret
 }
 
-func (fd *FileDelta) ContentFilteredForUsers(users utils.Set[AuthorEmail]) []string {
+func (fd FileDelta) GetUnalteredLines() []string {
+	ret := make([]string, 0)
+
+	for index, line := range fd.To.Lines {
+		if !fd.isLineNew(index) {
+			ret = append(ret, line.Text)
+		}
+	}
+
+	return ret
+}
+
+func (fd FileDelta) ContentFilteredForUsers(users utils.Set[AuthorEmail]) []string {
 	ret := make([]string, 0)
 	unghostedLineAuthors := fd.UnghostAuthors()
 	for index, line := range fd.To.Lines {
@@ -134,7 +146,7 @@ func (fd *FileDelta) ContentFilteredForUsers(users utils.Set[AuthorEmail]) []str
 	return ret
 }
 
-func (fd *FileDelta) GetAllOldAuthors() utils.Set[AuthorEmail] {
+func (fd FileDelta) GetAllOldAuthors() utils.Set[AuthorEmail] {
 	authorSet := make(map[AuthorEmail]bool)
 	for _, line := range fd.To.Lines {
 		author := AuthorFromLine(line)
@@ -144,7 +156,7 @@ func (fd *FileDelta) GetAllOldAuthors() utils.Set[AuthorEmail] {
 	return authorSet
 }
 
-func (fd *FileDelta) PrintUnghosted() {
+func (fd FileDelta) PrintUnghosted() {
 	unghostedLineAuthors := fd.UnghostAuthors()
 	for index, line := range fd.To.Lines {
 		fmt.Printf("%d\t%s\t%s\n", index, unghostedLineAuthors[index], line.Text)

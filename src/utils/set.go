@@ -20,6 +20,10 @@ func Unique[T comparable](array []T) Set[T] {
 	return ret
 }
 
+func (set *Set[T]) Add(element T) {
+	(*set)[element] = true
+}
+
 func (set Set[T]) Union(other Set[T]) Set[T] {
 	ret := set
 	for key := range other {
