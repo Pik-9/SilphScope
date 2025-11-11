@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"crypto/rand"
 	"log"
 	"os"
 	"testing"
@@ -8,23 +9,14 @@ import (
 
 	"github.com/Pik-9/SilphScope/src/utils"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-var baseFile []string
-var formattedAlpha []string
-var formattedBeta []string
-var formattedGamma []string
 var repoPath string
 var alice, bob, claire, david, eleonore, zorin AuthorEmail
 
 func init() {
 	repoPath = "../../testing_tmp/repo/"
-	baseFile = []string{"A", "B", "C", "D", "E"}
-	formattedAlpha = []string{"A", "b1+", "b2+", "b3+", "C", "d1+"}
-	formattedBeta = []string{"x1+", "x2+", "A", "b1+", "D"}
-	formattedGamma = []string{"A", "B", "c1+", "c2+"}
 
 	alice = AuthorEmail{
 		AuthorName: "Alice",
@@ -63,77 +55,10 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	repo, err := git.PlainInit(repoPath, false)
+	err = CreateSampleRepo(repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	wtree, err := repo.Worktree()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	commit := func(author string, authorEmail string) error {
-		cmt, err := wtree.Commit(author, &git.CommitOptions{
-			All:               false,
-			AllowEmptyCommits: false,
-			Parents:           []plumbing.Hash{},
-			SignKey:           nil,
-			Signer:            nil,
-			Amend:             false,
-			Committer:         nil,
-			Author: &object.Signature{
-				Name:  author,
-				Email: authorEmail,
-				When:  time.Now(),
-			},
-		})
-
-		if err != nil {
-			return err
-		}
-
-		_, err = repo.CommitObject(cmt)
-
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:1])
-	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:1])
-	utils.WriteLines(repoPath+"Gamma.txt", baseFile[0:1])
-	wtree.AddGlob("*")
-	commit("Alice", "alice@testing.com")
-
-	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:2])
-	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:2])
-	utils.WriteLines(repoPath+"Gamma.txt", baseFile[0:2])
-	wtree.AddGlob("*")
-	commit("Bob", "bob@testing.com")
-
-	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:3])
-	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:3])
-	wtree.AddGlob("*")
-	commit("Claire", "claire@testing.com")
-
-	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:4])
-	utils.WriteLines(repoPath+"Beta.txt", baseFile[0:4])
-	wtree.AddGlob("*")
-	commit("David", "david@testing.com")
-
-	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:5])
-	wtree.Add(repoPath + "Alpha.txt")
-	wtree.AddGlob("*")
-	commit("Eleonore", "eleonore@testing.com")
-
-	utils.WriteLines(repoPath+"Alpha.txt", formattedAlpha)
-	utils.WriteLines(repoPath+"Beta.txt", formattedBeta)
-	utils.WriteLines(repoPath+"Gamma.txt", formattedGamma)
-	wtree.AddGlob("*")
-	commit("Zorin", "zorin@reformatting.com")
 }
 
 func tearDown() {
@@ -254,4 +179,54 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:3])), []string{"A", "B", "c1+", "c2+"})
 	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:4])), []string{"A", "B", "c1+", "c2+"})
 	utils.CompareSlices(t, deltas[2].ContentFilteredForUsers(utils.Unique(authors[:5])), []string{"A", "B", "c1+", "c2+"})
+}
+
+func TestNewFileDeltas(t *testing.T) {
+	setup()
+	defer tearDown()
+
+	_, commit, parent, repo, err := ExtractPatch(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+
+	wtree, err := repo.Worktree()
+	if err != nil {
+		t.Error(err)
+	}
+
+	wtree.Reset(&git.ResetOptions{
+		Commit: parent.Hash,
+		Mode:   git.MixedReset,
+	})
+
+	data := make([]byte, 1024)
+	rand.Read(data)
+	file, _ := os.Create(repoPath + "/blob.bin")
+	file.Write(data)
+	file.Close()
+
+	wtree.Add("blob.bin")
+	wtree.Commit("Reformat with binary data.", &git.CommitOptions{
+		All: true,
+		Author: &object.Signature{
+			Name:  zorin.AuthorName,
+			Email: zorin.Author,
+			When:  time.Now(),
+		},
+	})
+
+	patch, commit, parent, _, err := ExtractPatch(repoPath, "HEAD")
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = NewFileDeltas(commit, parent, patch)
+	expectedError := "The commit must not contain any binary files."
+	if err == nil || err.Error() != expectedError {
+		t.Error("Expected to get an error when feeding binary data.")
+		if err != nil {
+			t.Errorf("Error message mismatch: \"%s\" != \"%s\"", expectedError, err.Error())
+		}
+	}
 }

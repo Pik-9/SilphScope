@@ -10,6 +10,7 @@ import (
 func main() {
 	commitHash := flag.String("c", "HEAD", "The commit to unghost.")
 	repoPath := flag.String("r", ".", "Path to repository.")
+	rebaseBranch := flag.String("b", "", "Branch to rebase onto.")
 	flag.Parse()
 
 	log.Default().Println("Unghosting commit", *commitHash, "in repo", *repoPath)
@@ -30,4 +31,6 @@ func main() {
 	}
 
 	log.Printf("Successfully unghosted commit %s in %s at branch %s.\n", commit.Hash.String(), *repoPath, unghostedBranchName)
+
+	log.Println("Rebasing onto", *rebaseBranch)
 }

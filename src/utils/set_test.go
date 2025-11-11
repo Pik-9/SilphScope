@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -11,8 +12,13 @@ func TestSet_ToArray(t *testing.T) {
 	expected1 := []int{}
 	expected2 := []int{1, 2, 4}
 
-	CompareSlices(t, expected1, set1.ToArray())
-	CompareSlices(t, expected2, set2.ToArray())
+	val1 := set1.ToArray()
+	val2 := set2.ToArray()
+	slices.Sort(val1)
+	slices.Sort(val2)
+
+	CompareSlices(t, expected1, val1)
+	CompareSlices(t, expected2, val2)
 }
 
 func TestUnique(t *testing.T) {
