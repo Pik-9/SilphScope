@@ -32,5 +32,11 @@ func main() {
 
 	log.Printf("Successfully unghosted commit %s in %s at branch %s.\n", commit.Hash.String(), *repoPath, unghostedBranchName)
 
-	log.Println("Rebasing onto", *rebaseBranch)
+	if *rebaseBranch != "" {
+		rebaseOutput, err := repository.RebaseUnghostedBranchOnto(unghostedBranchName, *rebaseBranch, *repoPath)
+		if err != nil {
+			log.Fatalf("Error while rebasing: %s\nManual intervention needed.\n\n%s\n", err, rebaseOutput)
+		}
+		log.Println("Rebased onto", *rebaseBranch)
+	}
 }
