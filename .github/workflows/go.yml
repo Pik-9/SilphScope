@@ -21,6 +21,9 @@ jobs:
       with:
         go-version: '1.25'
 
+    - name: Gitconfig
+      run: git config --global user.name "Happy Gopher" && git config --global user.email "gopher@golang.org"
+
     - name: Build
       run: go build -v ./...
 
