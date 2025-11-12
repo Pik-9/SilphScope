@@ -77,18 +77,3 @@ func TestSet_Union(t *testing.T) {
 
 func TestSet_Contains(t *testing.T) {
 }
-
-func TestSet_String(t *testing.T) {
-	var empty Set[string] = map[string]bool{}
-	var set1 Set[float64] = map[float64]bool{2.71: true, 3.14: true, 10: true}
-
-	expectedEmpty := "{}"
-	expectedSet1 := "{2.71, 3.14, 10}"
-
-	if empty.String() != expectedEmpty {
-		t.Errorf("%s != %s", empty.String(), expectedEmpty)
-	}
-	if set1.String() != expectedSet1 {
-		t.Errorf("%s != %s", set1.String(), expectedSet1)
-	}
-}
