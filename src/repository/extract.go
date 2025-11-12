@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"log"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -8,7 +10,11 @@ import (
 
 func getHash(s string, repo *git.Repository) plumbing.Hash {
 	if s == "HEAD" {
-		headRef, _ := repo.Reference(plumbing.HEAD, true)
+		headRef, err := repo.Reference(plumbing.HEAD, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		return headRef.Hash()
 	} else {
 		return plumbing.NewHash(s)

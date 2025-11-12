@@ -1,19 +1,14 @@
 package repository
 
 import (
-	"log"
-	"os"
 	"testing"
 
 	"github.com/Pik-9/SilphScope/src/utils"
 )
 
-var repoPath string
 var alice, bob, claire, david, eleonore, zorin AuthorEmail
 
 func init() {
-	repoPath = "../../testing_tmp/repo/"
-
 	alice = AuthorEmail{
 		AuthorName: "Alice",
 		Author:     "alice@testing.com",
@@ -45,31 +40,25 @@ func init() {
 	}
 }
 
-func setup() {
-	err := os.MkdirAll(repoPath, 0750)
+func tempSetup(t *testing.T) string {
+	ret := t.TempDir()
+
+	err := CreateSampleRepo(ret)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal("Test Setup:", err)
 	}
 
-	err = CreateSampleRepo(repoPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func tearDown() {
-	os.RemoveAll(repoPath)
+	return ret
 }
 
 func TestFileDelta_GetAllOldAuthors(t *testing.T) {
-	setup()
-	t.Cleanup(tearDown)
+	tempRepoPath := tempSetup(t)
 
 	expectedAlpha := utils.Unique([]AuthorEmail{alice, zorin, claire})
 	expectedBeta := utils.Unique([]AuthorEmail{zorin, alice, david})
 	expectedGamma := utils.Unique([]AuthorEmail{alice, bob, zorin})
 
-	patch, commit, parentCommit, _, err := ExtractPatch(repoPath, "HEAD")
+	patch, commit, parentCommit, _, err := ExtractPatch(tempRepoPath, "HEAD")
 	if err != nil {
 		t.Error(err)
 	}
@@ -96,8 +85,7 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 }
 
 func TestFileDelta_UnghostAuthors(t *testing.T) {
-	setup()
-	t.Cleanup(tearDown)
+	repoPath := tempSetup(t)
 
 	expectedAlpha := []AuthorEmail{
 		alice,
@@ -151,8 +139,7 @@ func TestFileDelta_UnghostAuthors(t *testing.T) {
 }
 
 func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
-	setup()
-	t.Cleanup(tearDown)
+	repoPath := tempSetup(t)
 
 	patch, commit, parentCommit, _, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {
@@ -196,8 +183,7 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 }
 
 func TestNewFileDeltas(t *testing.T) {
-	setup()
-	t.Cleanup(tearDown)
+	repoPath := tempSetup(t)
 
 	patch, commit, parent, _, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {

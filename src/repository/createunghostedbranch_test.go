@@ -9,8 +9,7 @@ import (
 )
 
 func Test_CreateUnghostedBranch(t *testing.T) {
-	setup()
-	t.Cleanup(tearDown)
+	repoPath := tempSetup(t)
 
 	patch, commit, parentCommit, repo, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {

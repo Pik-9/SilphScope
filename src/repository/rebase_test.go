@@ -10,8 +10,7 @@ import (
 )
 
 func TestRebaseUnghostedBranchOnto(t *testing.T) {
-	setup()
-	t.Cleanup(tearDown)
+	repoPath := tempSetup(t)
 
 	_, commit, _, repo, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {
@@ -49,7 +48,7 @@ func TestRebaseUnghostedBranchOnto(t *testing.T) {
 	output, err := RebaseUnghostedBranchOnto(unghostedBranchName, "master", repoPath)
 	if err != nil {
 		t.Error(err)
-		t.Error(output)
+		t.Fatal(output)
 	}
 
 	expectedGammaAuthors := []AuthorEmail{alice, bob, zorin, zorin, david}
