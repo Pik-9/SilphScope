@@ -6,6 +6,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"crypto/rand"
 	"os"
 	"time"
 )
@@ -82,6 +83,13 @@ func CreateSampleRepo(repoPath string) error {
 	wtree.AddGlob("*")
 	commit("David", "david@testing.com")
 
+	data := make([]byte, 1024)
+	rand.Read(data)
+	file, _ := os.Create(repoPath + "blob_eleonore.bin")
+	file.Write(data)
+	file.Close()
+	wtree.Add("blob_eleonore.bin")
+
 	utils.WriteLines(repoPath+"Alpha.txt", baseFile[0:5])
 	wtree.Add(repoPath + "Alpha.txt")
 	wtree.AddGlob("*")
@@ -90,6 +98,12 @@ func CreateSampleRepo(repoPath string) error {
 	utils.WriteLines(repoPath+"Alpha.txt", formattedAlpha)
 	utils.WriteLines(repoPath+"Beta.txt", formattedBeta)
 	utils.WriteLines(repoPath+"Gamma.txt", formattedGamma)
+	data = make([]byte, 512)
+	rand.Read(data)
+	file, _ = os.Create(repoPath + "blob_zorin.bin")
+	file.Write(data)
+	file.Close()
+	wtree.Add("blob_zorin.bin")
 	wtree.AddGlob("*")
 	commit("Zorin", "zorin@reformatting.com")
 	baseFile = []string{"A", "B", "C", "D", "E"}

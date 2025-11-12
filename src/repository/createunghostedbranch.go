@@ -33,17 +33,9 @@ func CreateUnghostedBranch(repo *git.Repository, repositoryPath string, commit *
 		return "", err
 	}
 
-	var authorsCollective utils.Set[AuthorEmail] = make(map[AuthorEmail]bool, len(authors))
 	// Initial state with all formatted lines removed:
 	for _, fd := range deltas {
-		filePath := fmt.Sprintf("%s/%s", repositoryPath, fd.ToPath)
-
-		// If the file was renamed/moved, make sure, git notices
-		if fd.FromPath != "" && fd.FromPath != fd.ToPath {
-			worktree.Move(fd.FromPath, fd.ToPath)
-		}
-
-		err = utils.WriteLines(filePath, fd.GetUnalteredLines())
+		err := fd.WriteUnalteredPart(repositoryPath, worktree)
 		if err != nil {
 			return "", err
 		}
@@ -60,16 +52,11 @@ func CreateUnghostedBranch(repo *git.Repository, repositoryPath string, commit *
 	}
 
 	// Changes from every author
+	var authorsCollective utils.Set[AuthorEmail] = make(map[AuthorEmail]bool, len(authors))
 	for author := range authors {
 		authorsCollective.Add(author)
 		for _, fd := range deltas {
-			filePath := fmt.Sprintf("%s/%s", repositoryPath, fd.ToPath)
-
-			err = utils.WriteLines(filePath, fd.ContentFilteredForUsers(authorsCollective))
-			if err != nil {
-				return "", err
-			}
-			_, err = worktree.Add(fd.ToPath)
+			err = fd.WriteAuthorPart(authorsCollective, repositoryPath, worktree)
 			if err != nil {
 				return "", err
 			}

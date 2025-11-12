@@ -10,7 +10,7 @@ import (
 
 func Test_CreateUnghostedBranch(t *testing.T) {
 	setup()
-	defer tearDown()
+	t.Cleanup(tearDown)
 
 	patch, commit, parentCommit, repo, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {

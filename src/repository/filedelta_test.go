@@ -1,15 +1,11 @@
 package repository
 
 import (
-	"crypto/rand"
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/Pik-9/SilphScope/src/utils"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 var repoPath string
@@ -67,7 +63,7 @@ func tearDown() {
 
 func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 	setup()
-	defer tearDown()
+	t.Cleanup(tearDown)
 
 	expectedAlpha := utils.Unique([]AuthorEmail{alice, zorin, claire})
 	expectedBeta := utils.Unique([]AuthorEmail{zorin, alice, david})
@@ -101,7 +97,7 @@ func TestFileDelta_GetAllOldAuthors(t *testing.T) {
 
 func TestFileDelta_UnghostAuthors(t *testing.T) {
 	setup()
-	defer tearDown()
+	t.Cleanup(tearDown)
 
 	expectedAlpha := []AuthorEmail{
 		alice,
@@ -131,9 +127,18 @@ func TestFileDelta_UnghostAuthors(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	deltas, err := NewFileDeltas(commit, parentCommit, patch)
+	gdeltas, err := NewFileDeltas(commit, parentCommit, patch)
 	if err != nil {
 		t.Error(err)
+	}
+
+	deltas := make([]TextFileDelta, len(gdeltas))
+	for index, delta := range gdeltas[:3] {
+		tdelta, ok := delta.(TextFileDelta)
+		if !ok {
+			t.Fatalf("File delta #%d is not a TextFileDelta", index)
+		}
+		deltas[index] = tdelta
 	}
 
 	newAuthorsAlpha := deltas[0].UnghostAuthors()
@@ -147,15 +152,24 @@ func TestFileDelta_UnghostAuthors(t *testing.T) {
 
 func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 	setup()
-	defer tearDown()
+	t.Cleanup(tearDown)
 
 	patch, commit, parentCommit, _, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {
 		t.Error(err)
 	}
-	deltas, err := NewFileDeltas(commit, parentCommit, patch)
+	gdeltas, err := NewFileDeltas(commit, parentCommit, patch)
 	if err != nil {
 		t.Error(err)
+	}
+
+	deltas := make([]TextFileDelta, len(gdeltas))
+	for index, delta := range gdeltas[:3] {
+		tdelta, ok := delta.(TextFileDelta)
+		if !ok {
+			t.Fatalf("File delta #%d is not a TextFileDelta", index)
+		}
+		deltas[index] = tdelta
 	}
 
 	authors := []AuthorEmail{zorin, alice, bob, claire, david, eleonore}
@@ -183,50 +197,38 @@ func TestFileDelta_ContentFilteredForUsers(t *testing.T) {
 
 func TestNewFileDeltas(t *testing.T) {
 	setup()
-	defer tearDown()
-
-	_, commit, parent, repo, err := ExtractPatch(repoPath, "HEAD")
-	if err != nil {
-		t.Error(err)
-	}
-
-	wtree, err := repo.Worktree()
-	if err != nil {
-		t.Error(err)
-	}
-
-	wtree.Reset(&git.ResetOptions{
-		Commit: parent.Hash,
-		Mode:   git.MixedReset,
-	})
-
-	data := make([]byte, 1024)
-	rand.Read(data)
-	file, _ := os.Create(repoPath + "/blob.bin")
-	file.Write(data)
-	file.Close()
-
-	wtree.Add("blob.bin")
-	wtree.Commit("Reformat with binary data.", &git.CommitOptions{
-		All: true,
-		Author: &object.Signature{
-			Name:  zorin.AuthorName,
-			Email: zorin.Author,
-			When:  time.Now(),
-		},
-	})
+	t.Cleanup(tearDown)
 
 	patch, commit, parent, _, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, err = NewFileDeltas(commit, parent, patch)
-	expectedError := "The commit must not contain any binary files."
-	if err == nil || err.Error() != expectedError {
-		t.Error("Expected to get an error when feeding binary data.")
-		if err != nil {
-			t.Errorf("Error message mismatch: \"%s\" != \"%s\"", expectedError, err.Error())
+	gdeltas, err := NewFileDeltas(commit, parent, patch)
+
+	ctrText := 0
+	ctrBin := 0
+	for _, delta := range gdeltas {
+		_, isText := delta.(TextFileDelta)
+		if isText {
+			ctrText++
 		}
+
+		bdelta, isBinary := delta.(BinaryFileDelta)
+		if isBinary {
+			ctrBin++
+
+			length := len(bdelta.Content)
+			if length != 512 {
+				t.Errorf("Expected binary file to have a size of 512. Was %d", length)
+			}
+		}
+	}
+
+	if ctrText != 3 {
+		t.Errorf("Expected %d text files. Got %d", 3, ctrText)
+	}
+	if ctrBin != 1 {
+		t.Errorf("Expected %d binary files. Got %d", 1, ctrBin)
 	}
 }

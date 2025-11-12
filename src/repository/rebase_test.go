@@ -11,7 +11,7 @@ import (
 
 func TestRebaseUnghostedBranchOnto(t *testing.T) {
 	setup()
-	defer tearDown()
+	t.Cleanup(tearDown)
 
 	_, commit, _, repo, err := ExtractPatch(repoPath, "HEAD")
 	if err != nil {
