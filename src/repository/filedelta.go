@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"log"
 
 	"strings"
 
@@ -22,6 +23,7 @@ type FileDelta interface {
 	GetAllOldAuthors() utils.Set[AuthorEmail]
 	WriteUnalteredPart(string, *git.Worktree) error
 	WriteAuthorPart(utils.Set[AuthorEmail], string, *git.Worktree) error
+	GetFilePath() string
 }
 
 type TextFileDelta struct {
@@ -44,8 +46,9 @@ func NewFileDeltas(commit *object.Commit, parentCommit *object.Commit, patch dif
 		return file.Path()
 	}
 
-	ret := make([]FileDelta, 0, len(patch.FilePatches()))
-	for _, fp := range patch.FilePatches() {
+	filePatches := patch.FilePatches()
+	ret := make([]FileDelta, 0, len(filePatches))
+	for index, fp := range filePatches {
 		var lret FileDelta
 		toPath, fromPath := fp.Files()
 
@@ -107,6 +110,12 @@ func NewFileDeltas(commit *object.Commit, parentCommit *object.Commit, patch dif
 
 			lret = fd
 		}
+
+		log.Printf("Inspecting file changes (%d/%d) for file %s",
+			index+1,
+			len(filePatches),
+			lret.GetFilePath(),
+		)
 
 		ret = append(ret, lret)
 	}
@@ -334,4 +343,12 @@ func (fd BinaryFileDelta) WriteAuthorPart(authors utils.Set[AuthorEmail], repoPa
 
 	_, err = worktree.Add(fd.ToPath)
 	return err
+}
+
+func (fd TextFileDelta) GetFilePath() string {
+	return fd.ToPath
+}
+
+func (fd BinaryFileDelta) GetFilePath() string {
+	return fd.ToPath
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Pik-9/SilphScope/src/utils"
 	"github.com/go-git/go-git/v5"
@@ -15,6 +16,8 @@ func CreateUnghostedBranch(repo *git.Repository, repositoryPath string, commit *
 	for _, delta := range deltas {
 		authors = authors.Union(delta.GetAllOldAuthors())
 	}
+
+	log.Printf("Content of these authors has been affected: %v", authors)
 
 	branchName := fmt.Sprintf("unghost-%s", commit.Hash.String())
 
@@ -53,13 +56,22 @@ func CreateUnghostedBranch(repo *git.Repository, repositoryPath string, commit *
 
 	// Changes from every author
 	var authorsCollective utils.Set[AuthorEmail] = make(map[AuthorEmail]bool, len(authors))
-	for author := range authors {
+	for authorIndex, author := range authors.ToArray() {
 		authorsCollective.Add(author)
-		for _, fd := range deltas {
+		for deltaIndex, fd := range deltas {
 			err = fd.WriteAuthorPart(authorsCollective, repositoryPath, worktree)
 			if err != nil {
 				return "", err
 			}
+
+			log.Printf("Applying changes: %s (%d/%d) --> %s (%d/%d)",
+				author,
+				authorIndex+1,
+				len(authors),
+				fd.GetFilePath(),
+				deltaIndex+1,
+				len(deltas),
+			)
 		}
 
 		_, err = worktree.Commit(commit.Message, &git.CommitOptions{

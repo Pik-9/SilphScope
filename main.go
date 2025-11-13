@@ -20,6 +20,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Printf("Extracted a patch of changes across %d files", len(patch.FilePatches()))
+
 	deltas, err := repository.NewFileDeltas(commit, parent, patch)
 	if err != nil {
 		log.Fatal(err)
