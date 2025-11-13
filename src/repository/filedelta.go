@@ -143,8 +143,8 @@ func (fd TextFileDelta) GetFromLines() []sourceLine {
 }
 
 func compareLines(a, b string) bool {
-	l1 := strings.TrimLeft(a, " \t")
-	l2 := strings.TrimLeft(b, " \t")
+	l1 := strings.ReplaceAll(strings.TrimSpace(a), " ", "")
+	l2 := strings.ReplaceAll(strings.TrimSpace(b), " ", "")
 	return l1 == l2
 }
 
