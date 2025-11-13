@@ -45,11 +45,15 @@ func TestRebaseUnghostedBranchOnto(t *testing.T) {
 		t.Error(err)
 	}
 
+	time.Sleep(250 * time.Millisecond)
+
 	output, err := RebaseUnghostedBranchOnto(unghostedBranchName, "master", repoPath)
 	if err != nil {
 		t.Error(err)
 		t.Fatal(output)
 	}
+
+	time.Sleep(250 * time.Millisecond)
 
 	expectedGammaAuthors := []AuthorEmail{alice, bob, zorin, zorin, david}
 
