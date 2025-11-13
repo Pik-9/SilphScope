@@ -2,23 +2,30 @@ package utils
 
 import (
 	"os"
+	"runtime"
 )
 
-func WriteLines(path string, lines []string) error {
-	fout, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer fout.Close()
+var lineEnd []byte
 
+func init() {
+	if runtime.GOOS == "windows" {
+		lineEnd = []byte{'\r', '\n'}
+	} else {
+		lineEnd = []byte{'\n'}
+	}
+}
+
+func LinesToBuffer(lines []string) []byte {
+	ret := make([]byte, 0)
 	for _, line := range lines {
-		_, err = fout.WriteString(line + "\n")
-		if err != nil {
-			return err
-		}
+		ret = append(ret, []byte(line)...)
+		ret = append(ret, lineEnd...)
 	}
+	return ret
+}
 
-	return nil
+func WriteLines(path string, lines []string) error {
+	return WriteBuffer(path, LinesToBuffer(lines))
 }
 
 func WriteBuffer(path string, content []byte) error {

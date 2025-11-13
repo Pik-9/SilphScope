@@ -257,12 +257,7 @@ func (fd TextFileDelta) PrintUnghosted() {
 }
 
 func (fd TextFileDelta) ContentForUsers(users utils.Set[AuthorEmail]) []byte {
-	ret := make([]byte, 0)
-	for _, line := range fd.ContentFilteredForUsers(users) {
-		ret = append(ret, []byte(line)...)
-		ret = append(ret, '\n')
-	}
-	return ret
+	return utils.LinesToBuffer(fd.ContentFilteredForUsers(users))
 }
 
 func (fd BinaryFileDelta) ContentForUsers(users utils.Set[AuthorEmail]) []byte {
